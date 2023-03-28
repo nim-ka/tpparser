@@ -1,11 +1,20 @@
 const fs = require("fs")
 
 let args = process.argv.slice(2)
-let prune = args.includes("--prune")
 
-if (prune) {
-    args.splice(args.indexOf("--prune"), 1)
+function getarg(args, key) {
+    let idx = args.indexOf(key)
+    
+    if (idx > -1) {
+        args.splice(idx, 1)
+        return true
+    }
+    
+    return false
 }
+
+let prune = getarg(args, "--prune")
+let first = getarg(args, "--first")
 
 function isIdent(str) {
     return /^[A-Za-z0-9_]+$/.test(str)
@@ -321,13 +330,20 @@ let sentences = args[1].split(".")
 for (let sentence of sentences) {
     sentence = sentence.trim()
     
-    console.log(`\n--------------- "${sentence}"`)
+    console.log(`--------------- "${sentence}"`)
     
     let tokens = sentence.match(/[a-z]+/g) ?? []
     let res = match(grammar, "sentence", tokens)
 
-    for (let r of res) {
-        console.log()
-        print(r)
+    for (let i = 0; i < res.length; i++) {
+        print(res[i])
+        
+        if (first) {
+            break
+        }
+        
+        if (i < res.length - 1) {
+            console.log()
+        }
     }
 }
