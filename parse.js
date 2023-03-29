@@ -197,7 +197,7 @@ function parse(str) {
     return result
 }
 
-function addError(errors, tree, token, expected) {
+function addError(errors, type, tree, expected) {
     let head = copy(tree)
     tree = head
     
@@ -206,7 +206,7 @@ function addError(errors, tree, token, expected) {
         tree = tree.parent
     }
     
-    errors.push({ tree, head, token, expected })
+    errors.push({ type, tree, head, expected })
 }
 
 function copy(tree) {
@@ -269,7 +269,7 @@ function match(grammar, target, tokens) {
         for (let i = 0; i < fronts.length; i++) {
             while (fronts[i] != null) {
                 if (fronts[i].expect.length == 0) {
-                    addError(errors, fronts[i], token, `end of input`)
+                    addError(errors, `Unexpected token ${token}`, fronts[i], `end of input`)
                     fronts[i] = null
                     break
                 }
@@ -295,7 +295,7 @@ function match(grammar, target, tokens) {
                             }
                         }
                     } else {
-                        addError(errors, fronts[i], token, fronts[i].fresh ? fronts[i].type : `"${next.value}"`)
+                        addError(errors, `Unexpected token ${token}`, fronts[i], fronts[i].fresh ? fronts[i].type : `"${next.value}"`)
                         fronts[i] = null
                     }
                     
@@ -332,10 +332,14 @@ function match(grammar, target, tokens) {
     }
     
     let results = fronts.filter((e) => e.done && e.parent == null)
-    let errors = null
+    let errors = []
     
     if (results.length == 0) {
-        errors = lastErrors
+        for (let front of fronts) {
+            addError(errors, "Unexpected end of input", front, front.expect[0].value)
+        }
+        
+        errors = [...errors, ...lastErrors]
         results = errors.map((e) => e.tree)
     }
     
@@ -361,7 +365,7 @@ function print(tree, highlight, offset = 0) {
 }
 
 let grammar = parse(fs.readFileSync(args[0], "utf8"))
-let sentences = args[1].split(".")
+let sentences = args[1].split(/[.:]/)
 
 for (let sentence of sentences) {
     let tokens = sentence.match(/[a-z]+/g) ?? []
@@ -370,7 +374,7 @@ for (let sentence of sentences) {
     
     let { results, errors } = match(grammar, "sentence", tokens)
     
-    if (errors) {
+    if (errors.length) {
         console.log(`\x1b[31mFailed to parse sentence.\x1b[0m\n`)
         
         errors = errors.map((e, i) => ({
@@ -379,7 +383,7 @@ for (let sentence of sentences) {
         })).filter((e, i, a) => a.findIndex((f) => e.error.expected == f.error.expected) == i)
         
         for (let i = 0; i < errors.length; i++) {
-            console.log(`\x1b[31mUnexpected token "${errors[i].error.token}"; expected ${errors[i].error.expected}\x1b[0m`)
+            console.log(`\x1b[31m${errors[i].error.type}; expected ${errors[i].error.expected}\x1b[0m`)
             print(errors[i].result, errors[i].error.head)
             
             if (first) {
