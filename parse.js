@@ -373,11 +373,14 @@ for (let sentence of sentences) {
     if (errors) {
         console.log(`\x1b[31mFailed to parse sentence.\x1b[0m\n`)
         
-        errors = errors.filter((e, i, a) => a.findIndex((f) => e.expected == f.expected) == i)
+        errors = errors.map((e, i) => ({
+            error: e,
+            result: results[i]
+        })).filter((e, i, a) => a.findIndex((f) => e.error.expected == f.error.expected) == i)
         
         for (let i = 0; i < errors.length; i++) {
-            console.log(`\x1b[31mUnexpected token "${errors[i].token}"; expected ${errors[i].expected}\x1b[0m`)
-            print(results[i], errors[i].head)
+            console.log(`\x1b[31mUnexpected token "${errors[i].error.token}"; expected ${errors[i].error.expected}\x1b[0m`)
+            print(errors[i].result, errors[i].error.head)
             
             if (first) {
                 break
