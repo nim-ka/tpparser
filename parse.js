@@ -197,11 +197,25 @@ function parse(str) {
     return result
 }
 
+function addError(errors, tree, token, expected) {
+    let head = copy(tree)
+    tree = head
+    
+    while (tree.parent != null) {
+        tree.parent.children.push(tree)
+        tree = tree.parent
+    }
+    
+    errors.push({ tree, head, token, expected })
+}
+
 function copy(tree) {
     return tree == null ? null : {
+        id: tree.id,
         type: tree.type,
         expect: tree.expect.slice(),
         done: tree.done,
+        fresh: tree.fresh,
         wrapper: tree.wrapper,
         deprioritize: tree.deprioritize,
         parent: copy(tree.parent),
@@ -229,12 +243,15 @@ function clean(tree) {
 function match(grammar, target, tokens) {
     let fronts = []
     let rule = grammar[target]
+    let id = 0
     
     for (let i = 0; i < rule.length; i++) {
         fronts.push({
+            id: id++,
             type: target,
             expect: rule[i].slice(),
             done: false,
+            fresh: true,
             wrapper: rule.wrapper,
             deprioritize: false,
             parent: null,
@@ -242,12 +259,17 @@ function match(grammar, target, tokens) {
         })
     }
     
+    let lastErrors
+    
     for (let token of tokens) {
+        let errors = []
+        
         fronts.sort((a, b) => a.deprioritize ? 1 : b.deprioritize ? -1 : 0)
         
         for (let i = 0; i < fronts.length; i++) {
             while (fronts[i] != null) {
                 if (fronts[i].expect.length == 0) {
+                    addError(errors, fronts[i], token, `end of input`)
                     fronts[i] = null
                     break
                 }
@@ -256,6 +278,7 @@ function match(grammar, target, tokens) {
                 
                 if (next.type == "literal") {
                     if (token == next.value) {
+                        fronts[i].fresh = false
                         fronts[i].children.push(token)
                     
                         if (fronts[i].expect.length == 0) {
@@ -271,11 +294,12 @@ function match(grammar, target, tokens) {
                                 fronts[i].done = fronts[i].expect.length == 0
                             }
                         }
-                        
-                        break
                     } else {
+                        addError(errors, fronts[i], token, fronts[i].fresh ? fronts[i].type : `"${next.value}"`)
                         fronts[i] = null
                     }
+                    
+                    break
                 } else if (next.type == "token") {
                     let nexts = []
                     let name = next.value
@@ -283,9 +307,11 @@ function match(grammar, target, tokens) {
                     
                     for (let j = 0; j < rule.length; j++) {
                         nexts.push({
+                            id: id++,
                             type: name,
                             expect: rule[j].slice(),
                             done: false,
+                            fresh: true,
                             wrapper: rule.wrapper,
                             deprioritize: fronts[i].deprioritize || rule.deprioritize,
                             parent: copy(fronts[i]),
@@ -299,27 +325,37 @@ function match(grammar, target, tokens) {
         }
         
         fronts = fronts.filter((e) => e != null)
-    }
-    
-    let cleaned = []
-    
-    for (let tree of fronts) {
-        if (tree.done && tree.parent == null) {
-            cleaned.push(clean(copy(tree)))
+        
+        if (errors.length) {
+            lastErrors = errors
         }
     }
     
-    return cleaned
+    let results = fronts.filter((e) => e.done && e.parent == null)
+    let errors = null
+    
+    if (results.length == 0) {
+        errors = lastErrors
+        results = errors.map((e) => e.tree)
+    }
+    
+    results = results.map((e) => clean(copy(e)))
+    
+    return { results, errors }
 }
 
-function print(tree, offset = 0) {
+function print(tree, highlight, offset = 0) {
     let str = typeof tree == "object" ? tree.type + ":" : "\x1b[32m" + tree + "\x1b[0m"
+    
+    if (highlight && tree.id == highlight.id) {
+        str += " \x1b[31m<~\x1b[0m"
+    }
     
     console.log(" ".repeat(offset) + str)
     
     if (typeof tree == "object") {
         for (let child of tree.children) {
-            print(child, offset + 2)
+            print(child, highlight, offset + 2)
         }
     }
 }
@@ -328,22 +364,42 @@ let grammar = parse(fs.readFileSync(args[0], "utf8"))
 let sentences = args[1].split(".")
 
 for (let sentence of sentences) {
-    sentence = sentence.trim()
-    
-    console.log(`--------------- "${sentence}"`)
-    
     let tokens = sentence.match(/[a-z]+/g) ?? []
-    let res = match(grammar, "sentence", tokens)
-
-    for (let i = 0; i < res.length; i++) {
-        print(res[i])
+    
+    console.log(`--------------- \x1b[33m"${tokens.join(" ")}"\x1b[0m`)
+    
+    let { results, errors } = match(grammar, "sentence", tokens)
+    
+    if (errors) {
+        console.log(`\x1b[31mFailed to parse sentence.\x1b[0m\n`)
         
-        if (first) {
-            break
+        errors = errors.filter((e, i, a) => a.findIndex((f) => e.expected == f.expected) == i)
+        
+        for (let i = 0; i < errors.length; i++) {
+            console.log(`\x1b[31mUnexpected token "${errors[i].token}"; expected ${errors[i].expected}\x1b[0m`)
+            print(results[i], errors[i].head)
+            
+            if (first) {
+                break
+            }
+            
+            if (i < errors.length - 1) {
+                console.log()
+            }
         }
-        
-        if (i < res.length - 1) {
-            console.log()
+    } else {
+        console.log(`\x1b[36mFound ${results.length} interpretation${results.length == 1 ? "" : "s"}\x1b[0m\n`)
+
+        for (let i = 0; i < results.length; i++) {
+            print(results[i])
+            
+            if (first) {
+                break
+            }
+            
+            if (i < results.length - 1) {
+                console.log()
+            }
         }
     }
 }
