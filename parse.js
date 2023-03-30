@@ -197,7 +197,7 @@ function parse(str) {
     return result
 }
 
-function addError(errors, type, tree, expected) {
+function addError(errors, type, tree, expected, suggestion) {
     let head = copy(tree)
     tree = head
     
@@ -206,7 +206,7 @@ function addError(errors, type, tree, expected) {
         tree = tree.parent
     }
     
-    errors.push({ type, tree, head, expected })
+    errors.push({ type, tree, head, expected, suggestion })
 }
 
 function copy(tree) {
@@ -215,7 +215,6 @@ function copy(tree) {
         type: tree.type,
         expect: tree.expect.slice(),
         done: tree.done,
-        fresh: tree.fresh,
         wrapper: tree.wrapper,
         deprioritize: tree.deprioritize,
         parent: copy(tree.parent),
@@ -251,7 +250,6 @@ function match(grammar, target, tokens) {
             type: target,
             expect: rule[i].slice(),
             done: false,
-            fresh: true,
             wrapper: rule.wrapper,
             deprioritize: false,
             parent: null,
@@ -259,7 +257,10 @@ function match(grammar, target, tokens) {
         })
     }
     
+    tokens.push("END")
+    
     let lastErrors
+    let tokensSoFar = []
     
     for (let token of tokens) {
         let errors = []
@@ -269,8 +270,16 @@ function match(grammar, target, tokens) {
         for (let i = 0; i < fronts.length; i++) {
             while (fronts[i] != null) {
                 if (fronts[i].expect.length == 0) {
-                    addError(errors, `Unexpected token ${token}`, fronts[i], `end of input`)
-                    fronts[i] = null
+                    if (token != "END") {
+                        addError(
+                            errors,
+                            `Unexpected token ${token}`,
+                            fronts[i],
+                            `end of input`,
+                            [...tokensSoFar])
+                        fronts[i] = null
+                    }
+                    
                     break
                 }
                 
@@ -278,7 +287,6 @@ function match(grammar, target, tokens) {
                 
                 if (next.type == "literal") {
                     if (token == next.value) {
-                        fronts[i].fresh = false
                         fronts[i].children.push(token)
                     
                         if (fronts[i].expect.length == 0) {
@@ -295,7 +303,12 @@ function match(grammar, target, tokens) {
                             }
                         }
                     } else {
-                        addError(errors, `Unexpected token ${token}`, fronts[i], fronts[i].fresh ? fronts[i].type : `"${next.value}"`)
+                        addError(
+                            errors,
+                            token == "END" ? `Unexpected end of input` : `Unexpected token ${token}`,
+                            fronts[i],
+                            fronts[i].children.length == 0 ? fronts[i].type : `"${next.value}"`,
+                            [...tokensSoFar, next.value])
                         fronts[i] = null
                     }
                     
@@ -311,7 +324,6 @@ function match(grammar, target, tokens) {
                             type: name,
                             expect: rule[j].slice(),
                             done: false,
-                            fresh: true,
                             wrapper: rule.wrapper,
                             deprioritize: fronts[i].deprioritize || rule.deprioritize,
                             parent: copy(fronts[i]),
@@ -329,17 +341,15 @@ function match(grammar, target, tokens) {
         if (errors.length) {
             lastErrors = errors
         }
+        
+        tokensSoFar.push(token)
     }
     
     let results = fronts.filter((e) => e.done && e.parent == null)
     let errors = []
     
     if (results.length == 0) {
-        for (let front of fronts) {
-            addError(errors, "Unexpected end of input", front, front.expect[0].value)
-        }
-        
-        errors = [...errors, ...lastErrors]
+        errors = lastErrors
         results = errors.map((e) => e.tree)
     }
     
@@ -383,7 +393,7 @@ for (let sentence of sentences) {
         })).filter((e, i, a) => a.findIndex((f) => e.error.expected == f.error.expected) == i)
         
         for (let i = 0; i < errors.length; i++) {
-            console.log(`\x1b[31m${errors[i].error.type}; expected ${errors[i].error.expected}\x1b[0m`)
+            console.log(`\x1b[31m${errors[i].error.type}; expected ${errors[i].error.expected} ("${errors[i].error.suggestion.join(" ")} [...]"?)\x1b[0m`)
             print(errors[i].result, errors[i].error.head)
             
             if (first) {
