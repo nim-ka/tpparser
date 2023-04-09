@@ -1,9 +1,5 @@
 # things this doesn't do:
 #  - X ala X questions
-#  - nanpa
-# bugs:
-#  - mi li / sina li
-#  - kin headnoun?
 
 sentence =
   <subject> <vocative_particle> |
@@ -12,11 +8,20 @@ sentence =
 clause =
   <content_phrase> |
   <unmarked_pred_subject> <unmarked_predicate> |
-  <subject> <marked_predicate> |
+  <marked_pred_subject> <marked_predicate> |
   [<subject>] <deontic_predicate>;
 
 subject =
-  <content_phrase> [<subject_marker> <subject>];
+  <unmarked_pred_subject> |
+  <marked_pred_subject>;
+
+marked_pred_subject =
+  <content_phrase_marked_pred> |
+  <multiple_subject>;
+
+multiple_subject* =
+  <content_phrase> <subject_marker> <content_phrase> |
+  <content_phrase> <subject_marker> <multiple_subject>;
 
 unmarked_predicate* =
   <predicate_body> [<marked_predicate>];
@@ -53,14 +58,41 @@ object_phrases* =
 object_phrase =
   <object_marker> <content_phrase> [<prep_phrases>];
 
-content_phrase% =
-  <content_words> [<grouped_content_phrase>];
+content_phrase =
+  <content_word_head> |
+  <content_phrase_multiple_words>;
+
+content_phrase_marked_pred =
+  <content_word_head_marked_pred> |
+  <content_phrase_multiple_words>;
 
 grouped_content_phrase =
-  <regrouping_particle> <content_word> <content_words>;
+  <regrouping_particle> <content_phrase_multiple_words_no_grouping>;
 
-content_words* =
-  <content_word> [<content_words>];
+content_phrase_multiple_words* =
+  <content_word_head> <grouped_content_phrase> |
+  <content_word_head> <ordinal_phrase> [<grouped_content_phrase>] |
+  <content_word_head> <content_phrase_modifiers> [<ordinal_phrase>] [<grouped_content_phrase>];
+
+content_phrase_multiple_words_no_grouping* =
+  <content_word_head> <ordinal_phrase> |
+  <content_word_head> <content_phrase_modifiers> [<ordinal_phrase>];
+
+content_phrase_modifiers =
+  <content_word_modifiers>;
+
+content_word_modifiers*% =
+  <content_word_modifier> [<content_word_modifiers>];
+
+# maybe ordinals shouldn't be restricted to number words?
+ordinal_phrase =
+  <ordinal_particle> <number>;
+
+number =
+  <number_words>;
+
+number_words* =
+  <number_word> [<number_words>];
 
 context_particle =
   $la;
@@ -86,11 +118,18 @@ regrouping_particle =
 emotion_particle =
   $a;
 
+ordinal_particle =
+  $nanpa;
+
 conjunction =
   $taso;
 
 weak_question_marker =
   $anu $seme;
+
+unmarked_pred_subject =
+  $mi |
+  $sina;
 
 preposition =
   $kepeken |
@@ -105,10 +144,6 @@ prep_preverb_modifier =
   $mute |
   $suli;
 
-unmarked_pred_subject =
-  $mi |
-  $sina;
-
 preverb =
   $awen |
   $kama |
@@ -118,7 +153,15 @@ preverb =
   $sona |
   $wile;
 
-content_word =
+number_word =
+  $ala |
+  $wan |
+  $tu |
+  $luka |
+  $mute |
+  $ale;
+
+content_word_head =
   $akesi |
   $ala |
   $alasa |
@@ -141,6 +184,244 @@ content_word =
   $kasi |
   $ken |
   $kepeken |
+  $kijetesantakalu |
+  $kili |
+  $kiwen |
+  $ko |
+  $kon |
+  $ku |
+  $kule |
+  $kulupu |
+  $kute |
+  $lape |
+  $laso |
+  $lawa |
+  $len |
+  $lete |
+  $lili |
+  $linja |
+  $lipu |
+  $loje |
+  $lon |
+  $luka |
+  $lukin |
+  $lupa |
+  $ma |
+  $mama |
+  $mani |
+  $meli |
+  $mi |
+  $mije |
+  $moku |
+  $moli |
+  $monsi |
+  $mu |
+  $mun |
+  $musi |
+  $mute |
+  $namako |
+  $nanpa |
+  $nasa |
+  $nasin |
+  $nena |
+  $ni |
+  $nimi |
+  $noka |
+  $oko |
+  $olin |
+  $ona |
+  $open |
+  $pakala |
+  $pali |
+  $palisa |
+  $pan |
+  $pana |
+  $pilin |
+  $pimeja |
+  $pini |
+  $pipi |
+  $poka |
+  $poki |
+  $pona |
+  $pu |
+  $sama |
+  $seli |
+  $selo |
+  $seme |
+  $sewi |
+  $sijelo |
+  $sike |
+  $sin |
+  $sina |
+  $sinpin |
+  $sitelen |
+  $sona |
+  $soweli |
+  $suli |
+  $suno |
+  $supa |
+  $suwi |
+  $tan |
+  $taso |
+  $tawa |
+  $telo |
+  $tenpo |
+  $toki |
+  $tomo |
+  $tonsi |
+  $tu |
+  $unpa |
+  $uta |
+  $utala |
+  $walo |
+  $wan |
+  $waso |
+  $wawa |
+  $weka |
+  $wile;
+
+content_word_head_marked_pred =
+  $akesi |
+  $ala |
+  $alasa |
+  $ale |
+  $anpa |
+  $ante |
+  $awen |
+  $esun |
+  $ijo |
+  $ike |
+  $ilo |
+  $insa |
+  $jaki |
+  $jan |
+  $jelo |
+  $jo |
+  $kala |
+  $kalama |
+  $kama |
+  $kasi |
+  $ken |
+  $kepeken |
+  $kijetesantakalu |
+  $kili |
+  $kiwen |
+  $ko |
+  $kon |
+  $ku |
+  $kule |
+  $kulupu |
+  $kute |
+  $lape |
+  $laso |
+  $lawa |
+  $len |
+  $lete |
+  $lili |
+  $linja |
+  $lipu |
+  $loje |
+  $lon |
+  $luka |
+  $lukin |
+  $lupa |
+  $ma |
+  $mama |
+  $mani |
+  $meli |
+  $mije |
+  $moku |
+  $moli |
+  $monsi |
+  $mu |
+  $mun |
+  $musi |
+  $mute |
+  $namako |
+  $nanpa |
+  $nasa |
+  $nasin |
+  $nena |
+  $ni |
+  $nimi |
+  $noka |
+  $oko |
+  $olin |
+  $ona |
+  $open |
+  $pakala |
+  $pali |
+  $palisa |
+  $pan |
+  $pana |
+  $pilin |
+  $pimeja |
+  $pini |
+  $pipi |
+  $poka |
+  $poki |
+  $pona |
+  $pu |
+  $sama |
+  $seli |
+  $selo |
+  $seme |
+  $sewi |
+  $sijelo |
+  $sike |
+  $sin |
+  $sinpin |
+  $sitelen |
+  $sona |
+  $soweli |
+  $suli |
+  $suno |
+  $supa |
+  $suwi |
+  $tan |
+  $taso |
+  $tawa |
+  $telo |
+  $tenpo |
+  $toki |
+  $tomo |
+  $tonsi |
+  $tu |
+  $unpa |
+  $uta |
+  $utala |
+  $walo |
+  $wan |
+  $waso |
+  $wawa |
+  $weka |
+  $wile;
+
+content_word_modifier =
+  $a |
+  $akesi |
+  $ala |
+  $alasa |
+  $ale |
+  $anpa |
+  $ante |
+  $awen |
+  $esun |
+  $ijo |
+  $ike |
+  $ilo |
+  $insa |
+  $jaki |
+  $jan |
+  $jelo |
+  $jo |
+  $kala |
+  $kalama |
+  $kama |
+  $kasi |
+  $ken |
+  $kepeken |
+  $kijetesantakalu |
   $kili |
   $kin |
   $kiwen |
@@ -235,4 +516,5 @@ content_word =
   $waso |
   $wawa |
   $weka |
-  $wile;
+  $wile |
+  $/^((?!Wu|Wo|Ji|Ti)[MNPTKSWLJ][aeiou]|[AEIOU])(?!nm|nn)n?((?!wu|wo|ji|ti)[mnptkswlj][aeiou](?!nm|nn)n?)*$/;
