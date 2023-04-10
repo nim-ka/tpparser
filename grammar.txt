@@ -11,7 +11,7 @@ clause =
   <marked_pred_subject> <marked_predicate> |
   [<subject>] <deontic_predicate>;
 
-subject =
+subject* =
   <unmarked_pred_subject> |
   <marked_pred_subject>;
 
@@ -32,7 +32,7 @@ marked_predicate* =
 deontic_predicate* =
   <deontic_pred_marker> <predicate_body> [<deontic_predicate>];
 
-predicate_body* =
+predicate_body =
   <intrans_verb> [<prep_phrases>] |
   <trans_verb> <object_phrases>;
 
