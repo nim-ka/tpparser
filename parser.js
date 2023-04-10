@@ -1,20 +1,4 @@
-const fs = require("fs")
-
-let args = process.argv.slice(2)
-
-function getarg(args, key) {
-    let idx = args.indexOf(key)
-    
-    if (idx > -1) {
-        args.splice(idx, 1)
-        return true
-    }
-    
-    return false
-}
-
-let prune = getarg(args, "--prune")
-let first = getarg(args, "--first")
+let prune = true
 
 function isIdent(str) {
     return /^[A-Za-z0-9_]+$/.test(str)
@@ -89,7 +73,8 @@ function tokenize(txt) {
             name = new RegExp(regex)
         } else {
             if (!isIdent(txt[i])) {
-                throw new Error(`Unrecognized character ${txt[i]}`)
+                displayError(`Unrecognized character ${txt[i]}`)
+                return null
             }
                 
             while (isIdent(txt[i])) {
@@ -113,6 +98,11 @@ function tokenize(txt) {
 
 function parse(str) {
     let root = tokenize(str)
+    
+    if (root == null) {
+        return null
+    }
+    
     let statements = [[]]
     
     for (let i = 0; i < root.children.length; i++) {
@@ -133,7 +123,8 @@ function parse(str) {
         let key = statement[0]
         
         if (key.type != "key") {
-            throw new Error(`Malformed statement`)
+            displayError(`Malformed statement: expected token of type key, got token of type ${key.type}`)
+            return null
         }
         
         let wrapper = false
@@ -152,7 +143,8 @@ function parse(str) {
         }
         
         if (statement[i].type != "=") {
-            throw new Error(`Malformed statement`)
+            displayError(`Malformed statement: expected token of type =, got token of type ${statement[i].type}`)
+            return null
         }
         
         i++
@@ -168,7 +160,8 @@ function parse(str) {
                 statement[i].type == "optional") {
                 matches.at(-1).push(statement[i])
             } else {
-                throw new Error(`Malformed statement: unexpected token of type ${statement[i].type}`)
+                displayError(`Malformed statement: unexpected token of type ${statement[i].type}`)
+                return null
             }
         }
         
@@ -369,23 +362,6 @@ function match(grammar, target, tokens, errorsStart) {
                     fronts.splice(i, 1, ...nexts)
                 }
             }
-            
-            /*
-            if (fronts[i] != null) {
-                let tree = shallowCopy(fronts[i])
-                
-                while (tree.parent != null) {
-                    tree.parent = shallowCopy(tree.parent)
-                    tree.parent.children.push(tree)
-                    tree = tree.parent
-                }
-                
-                console.clear()
-                console.log(token)
-                console.log()
-                print(tree, fronts[i])
-            }
-            */
         }
         
         fronts = fronts.filter((e) => e != null)
@@ -412,70 +388,119 @@ function match(grammar, target, tokens, errorsStart) {
     return { success, results, errors }
 }
 
-function print(tree, highlight, offset = 0) {
-    let str = typeof tree == "object" ? tree.type + ":" : "\x1b[32m" + tree + "\x1b[0m"
-    
-    if (highlight && tree.id == highlight.id) {
-        str += " \x1b[31m<~\x1b[0m"
-    }
-    
-    console.log(" ".repeat(offset) + str)
-    
+function displayTree(tree, div, highlight = false) {
     if (typeof tree == "object") {
-        for (let child of tree.children) {
-            print(child, highlight, offset + 2)
+        let label = document.createElement("div")
+        label.classList.add("label")
+        label.innerText = tree.type
+        
+        let node = document.createElement("div")
+        node.classList.add("node")
+        
+        if (highlight && tree.id == highlight.id) {
+            node.classList.add("highlight")
         }
-    }
-}
-
-let grammar = parse(fs.readFileSync(args[0], "utf8"))
-let sentences = args[1].split(/[.:]/)
-
-for (let sentence of sentences) {
-    let tokens = sentence.match(/[A-Za-z]+/g) ?? []
-    
-    console.log(`--------------- \x1b[33m"${tokens.join(" ")}"\x1b[0m`)
-    
-    let errorsStart = tokens.length
-    let { success, results, errors } = match(grammar, "sentence", tokens, errorsStart)
-    
-    if (success) {
-        console.log(`\x1b[36mFound ${results.length} interpretation${results.length == 1 ? "" : "s"}\x1b[0m\n`)
-
-        for (let i = 0; i < results.length; i++) {
-            print(results[i])
-            
-            if (first) {
-                break
-            }
-            
-            if (i < results.length - 1) {
-                console.log()
-            }
+        
+        node.appendChild(label)
+        div.appendChild(node)
+        
+        for (let child of tree.children) {
+            displayTree(child, node, highlight)
         }
     } else {
-        console.log(`\x1b[31mFailed to parse sentence.\nChecking for errors...\x1b[0m\n`)
+        let node = document.createElement("div")
+        node.classList.add("node")
+        node.innerText = tree
         
-        while (errors.length == 0) {
-            ({ success, results, errors } = match(grammar, "sentence", tokens, --errorsStart))
-        }
-        
-        errors = errors.map((e, i) => ({
-            error: e,
-            result: results[i]
-        })).filter((e, i, a) => a.findIndex((f) => e.error.expected == f.error.expected) == i)
-        
-        for (let i = 0; i < errors.length; i++) {
-            console.log(`\x1b[31m${errors[i].error.type}; expected ${errors[i].error.expected} ("${errors[i].error.suggestion.join(" ")}${errors[i].error.expected == "end of input" ? "" : " [...]"}"?)\x1b[0m`)
-            print(errors[i].result, errors[i].error.head)
-            
-            if (first) {
-                break
-            }
-            
-            if (i < errors.length - 1) {
-                console.log()
-            }
-        }
+        div.appendChild(node)
     }
 }
+
+let grammar = null
+let res = null
+let chosenResult = 0
+
+async function loadGrammar(file) {
+    clearDisplay()
+    
+    let res = await fetch(file)
+    grammar = parse(await res.text())
+    
+    if (grammar == null) {
+        displayError(`Unable to load grammar file`)
+    }
+}
+
+function updateParse() {
+    clearDisplay()
+    
+    if (grammar == null) {
+        displayError(`Unable to load grammar file`)
+        return
+    }
+    
+    let sentence = document.getElementById("text").value
+    let tokens = sentence.match(/[A-Za-z]+/g) ?? []
+    
+    let errorsStart = tokens.length
+    res = match(grammar, "sentence", tokens, errorsStart)
+    
+    if (!res.success) {
+        while (res.errors.length == 0 && errorsStart >= 0) {
+            res = match(grammar, "sentence", tokens, --errorsStart)
+        }
+        
+        res.errors = res.errors.map((e, i) => ({
+            error: e,
+            tree: res.results[i]
+        })).filter((e, i, a) => a.findIndex((f) => e.error.expected == f.error.expected) == i)
+    }
+    
+    chosenResult = 0
+    
+    updateDisplay()
+}
+
+function displayError(str) {
+    let errorDiv = document.getElementById("error")
+    
+    errorDiv.innerText = str
+}
+
+function clearDisplay() {
+    let headerDiv = document.getElementById("header")
+    let errorDiv = document.getElementById("error")
+    let displayDiv = document.getElementById("display")
+    
+    headerDiv.replaceChildren()
+    errorDiv.replaceChildren()
+    displayDiv.replaceChildren()
+}
+
+function updateDisplay() {
+    let headerDiv = document.getElementById("header")
+    let errorDiv = document.getElementById("error")
+    let displayDiv = document.getElementById("display")
+    
+    if (res == null) {
+        displayError(`An error occurred`)
+        return
+    }
+    
+    if (res.success) {
+        let tree = res.results[chosenResult]
+        
+        headerDiv.innerText = `Found ${res.results.length} interpretation${res.results.length == 1 ? "" : "s"}.`
+        
+        displayTree(tree, displayDiv)
+    } else {
+        let { error, tree } = res.errors[chosenResult]
+        
+        headerDiv.innerText = `Failed to parse sentence. ${res.errors.length} possible fix${res.errors.length == 1 ? "" : "es"} found.`
+        errorDiv.innerText = `${error.type}; expected ${error.expected} ("${error.suggestion.join(" ")}${error.expected == "end of input" ? "" : " [...]"}"?)`
+        
+        displayTree(tree, displayDiv, error.head)
+    }
+}
+
+window.addEventListener("load", () => loadGrammar("nasin_alesa.txt"))
