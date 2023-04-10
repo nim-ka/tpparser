@@ -408,10 +408,7 @@ function displayTree(tree, div, highlight = false) {
             displayTree(child, node, highlight)
         }
     } else {
-        let node = document.createElement("div")
-        node.classList.add("node")
-        node.innerText = tree
-        
+        let node = document.createTextNode(tree)
         div.appendChild(node)
     }
 }
