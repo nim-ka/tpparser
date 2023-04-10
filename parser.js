@@ -416,6 +416,7 @@ function displayTree(tree, div, highlight = false) {
 let grammar = null
 let res = null
 let chosenResult = 0
+let numResults = 0
 
 async function loadGrammar(file) {
     clearDisplay()
@@ -488,12 +489,14 @@ function updateDisplay() {
     
     if (res.success) {
         let tree = res.results[chosenResult]
+        numResults = res.results.length
         
         headerDiv.innerText = `Found ${res.results.length} interpretation${res.results.length == 1 ? "" : "s"}.`
         
         displayTree(tree, displayDiv)
     } else {
         let { error, tree } = res.errors[chosenResult]
+        numResults = res.errors.length
         
         headerDiv.innerText = `Failed to parse sentence. ${res.errors.length} possible fix${res.errors.length == 1 ? "" : "es"} found.`
         errorDiv.innerText = `${error.type}; expected ${error.expected} ("${error.suggestion.join(" ")}${error.expected == "end of input" ? "" : " [...]"}"?)`
@@ -511,13 +514,13 @@ function updateSelectors() {
 }
 
 function selectLeft() {
-    chosenResult = (chosenResult + res.results.length - 1) % res.results.length
+    chosenResult = (chosenResult + numResults - 1) % numResults
     clearDisplay()
     updateDisplay()
 }
 
 function selectRight() {
-    chosenResult = (chosenResult + 1) % res.results.length
+    chosenResult = (chosenResult + 1) % numResults
     clearDisplay()
     updateDisplay()
 }
