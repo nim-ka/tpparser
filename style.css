@@ -2,6 +2,10 @@
     color: darkred;
 }
 
+.hide {
+    display: none;
+}
+
 .node {
     display: inline-block;
     

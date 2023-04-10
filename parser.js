@@ -457,7 +457,6 @@ function updateParse() {
     }
     
     chosenResult = 0
-    
     updateDisplay()
 }
 
@@ -471,16 +470,19 @@ function clearDisplay() {
     let headerDiv = document.getElementById("header")
     let errorDiv = document.getElementById("error")
     let displayDiv = document.getElementById("display")
+    let selectorsDiv = document.getElementById("selectors")
     
     headerDiv.replaceChildren()
     errorDiv.replaceChildren()
     displayDiv.replaceChildren()
+    selectorsDiv.classList.add("hide")
 }
 
 function updateDisplay() {
     let headerDiv = document.getElementById("header")
     let errorDiv = document.getElementById("error")
     let displayDiv = document.getElementById("display")
+    let selectorsDiv = document.getElementById("selectors")
     
     if (res == null) {
         displayError(`An error occurred`)
@@ -501,6 +503,26 @@ function updateDisplay() {
         
         displayTree(tree, displayDiv, error.head)
     }
+    
+    updateSelectors()
+    selectorsDiv.classList.remove("hide")
+}
+
+function updateSelectors() {
+    let resultNumSpan = document.getElementById("resultnum")
+    resultNumSpan.innerText = chosenResult + 1;
+}
+
+function selectLeft() {
+    chosenResult = (chosenResult + res.results.length - 1) % res.results.length
+    clearDisplay()
+    updateDisplay()
+}
+
+function selectRight() {
+    chosenResult = (chosenResult + 1) % res.results.length
+    clearDisplay()
+    updateDisplay()
 }
 
 window.addEventListener("load", () => loadGrammar("nasin_alesa.txt"))
