@@ -430,8 +430,6 @@ async function loadGrammar(file) {
 }
 
 function updateParse() {
-    clearDisplay()
-    
     if (grammar == null) {
         displayError(`Unable to load grammar file`)
         return
@@ -439,6 +437,11 @@ function updateParse() {
     
     let sentence = document.getElementById("text").value
     let tokens = sentence.match(/[A-Za-z]+/g) ?? []
+    
+    if (tokens.length == 0) {
+        clearDisplay()
+        return
+    }
     
     let errorsStart = tokens.length
     res = match(grammar, "sentence", tokens, errorsStart)
@@ -458,9 +461,10 @@ function updateParse() {
     updateDisplay()
 }
 
-function displayError(str) {
+function displayError(str) {    
     let errorDiv = document.getElementById("error")
     
+    clearDisplay()
     errorDiv.innerText = str
 }
 
@@ -481,6 +485,8 @@ function updateDisplay() {
     let errorDiv = document.getElementById("error")
     let displayDiv = document.getElementById("display")
     let selectorsDiv = document.getElementById("selectors")
+    
+    clearDisplay()
     
     if (res == null) {
         displayError(`An error occurred`)
@@ -515,13 +521,11 @@ function updateSelectors() {
 
 function selectLeft() {
     chosenResult = (chosenResult + numResults - 1) % numResults
-    clearDisplay()
     updateDisplay()
 }
 
 function selectRight() {
     chosenResult = (chosenResult + 1) % numResults
-    clearDisplay()
     updateDisplay()
 }
 
