@@ -1,5 +1,7 @@
 # things this doesn't do:
 #  - X ala X questions
+# bugs:
+# - nanpa is screwy. nanpa phrases alone
 
 sentence =
   <subject> <vocative_particle> |
@@ -58,7 +60,7 @@ object_phrases* =
 object_phrase =
   <object_marker> <content_phrase> [<prep_phrases>];
 
-content_phrase =
+content_phrase% =
   <content_word_head> |
   <content_phrase_multiple_words>;
 
@@ -70,18 +72,18 @@ grouped_content_phrase =
   <regrouping_particle> <content_phrase_multiple_words_no_grouping>;
 
 content_phrase_multiple_words* =
-  <content_word_head> <grouped_content_phrase> |
-  <content_word_head> <ordinal_phrase> [<grouped_content_phrase>] |
-  <content_word_head> <content_phrase_modifiers> [<ordinal_phrase>] [<grouped_content_phrase>];
+  <content_phrase_multiple_words_no_grouping> [<grouped_content_phrase>] |
+  <content_word_head> <grouped_content_phrase>;
 
 content_phrase_multiple_words_no_grouping* =
-  <content_word_head> <ordinal_phrase> |
-  <content_word_head> <content_phrase_modifiers> [<ordinal_phrase>];
+  <ordinal_phrase> |
+  <content_word_head> <content_phrase_modifiers> |
+  <content_word_head> [<content_phrase_modifiers>] <ordinal_phrase>;
 
 content_phrase_modifiers =
   <content_word_modifiers>;
 
-content_word_modifiers*% =
+content_word_modifiers* =
   <content_word_modifier> [<content_word_modifiers>];
 
 # maybe ordinals shouldn't be restricted to number words?
