@@ -435,7 +435,7 @@ function updateParse() {
         return
     }
     
-    let sentence = document.getElementById("text").value
+    let sentence = document.getElementById("sentence").value
     let tokens = sentence.match(/[A-Za-z]+/g) ?? []
     
     if (tokens.length == 0) {
