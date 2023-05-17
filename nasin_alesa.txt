@@ -1,7 +1,11 @@
 # things this doesn't do:
 #  - X ala X questions
 # bugs:
-# - nanpa is screwy. nanpa phrases alone
+# - is "a" a full sentence? this thinks no
+# - is "a" at the end of a whole sentence distinct from "a" as a modifier? this thinks yes
+# - same with taso; generally, can some words go at the end of a sentence and mo
+# - is "kin" at the end of a whole sentence modifying the whole sentence a thing? this thinks no
+# - is "kin" a content word? this thinks yes (though only a modifier)
 
 sentence =
   <subject> <vocative_particle> |
