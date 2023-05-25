@@ -12,7 +12,7 @@ sentence =
   [<conjunction>] <clause> [<context_particle> <clause>] [<weak_question_marker>] [<emotion_particle>];
 
 clause =
-  <content_phrase> |
+  <subject> |
   <unmarked_pred_subject> <unmarked_predicate> |
   <marked_pred_subject> <marked_predicate> |
   [<subject>] <deontic_predicate>;
