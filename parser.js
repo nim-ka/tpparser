@@ -420,6 +420,16 @@ function displayTree(tree, div, highlight = null) {
     }
 }
 
+function setArrowsOffset(arrows) {
+    let displayDiv = document.getElementById("display")
+    
+    let rect = displayDiv.getBoundingClientRect()
+    arrows.style.top = rect.top
+    arrows.style.left = rect.left
+    arrows.style.width = rect.width
+    arrows.style.height = rect.height * 2 // what am i even doing
+}
+
 function drawArrows(tree, arrows) {
     if (typeof tree == "object") {
         for (let child of tree.children) {
@@ -560,6 +570,8 @@ function clearDisplay() {
     displayDiv.replaceChildren()
     selectorsDiv.classList.add("hide")
     arrows.replaceChildren()
+    
+    setArrowsOffset(arrows)
 }
 
 function updateDisplay() {
@@ -602,11 +614,7 @@ function updateDisplay() {
     updateSelectors()
     selectorsDiv.classList.remove("hide")
     
-    let rect = displayDiv.getBoundingClientRect()
-    arrows.style.top = rect.top
-    arrows.style.left = rect.left
-    arrows.style.width = rect.width
-    arrows.style.height = rect.height * 2 // what am i even doing
+    setArrowsOffset(arrows)
     
     if (arrowBox.checked) {
         drawArrows(tree, arrows)
