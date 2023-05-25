@@ -151,6 +151,7 @@ prep_preverb_modifier =
   $suli;
 
 preverb =
+  $alasa |
   $awen |
   $kama |
   $ken |

@@ -1,5 +1,3 @@
-let prune = true
-
 function isIdent(str) {
     return /^[A-Za-z0-9_]+$/.test(str)
 }
@@ -233,7 +231,7 @@ function deepCopy(tree) {
 function clean(tree) {
     if (typeof tree == "object") {
         for (let i = 0; i < tree.children.length; i++) {
-            if (prune && tree.children[i].wrapper) {
+            if (tree.children[i].wrapper) {
                 tree.children.splice(i, 1, ...tree.children[i].children)
                 i--
             }
@@ -247,7 +245,7 @@ function clean(tree) {
     return tree
 }
 
-function match(grammar, target, tokens, errorsStart) {
+function match(grammar, target, tokens, errorsStart, prune) {
     let fronts = []
     let rule = grammar[target]
     let id = 0
@@ -383,12 +381,16 @@ function match(grammar, target, tokens, errorsStart) {
         results = errors.map((e) => e.tree)
     }
     
-    results = results.map((e) => clean(deepCopy(e)))
+    results = results.map((e) => deepCopy(e))
+    
+    if (prune) {
+        results = results.map((e) => clean(e))
+    }
     
     return { success, results, errors }
 }
 
-function displayTree(tree, div, highlight = false) {
+function displayTree(tree, div, highlight = null) {
     if (typeof tree == "object") {
         let label = document.createElement("div")
         label.classList.add("label")
@@ -404,13 +406,80 @@ function displayTree(tree, div, highlight = false) {
         node.appendChild(label)
         div.appendChild(node)
         
+        tree.div = node
+        
         for (let child of tree.children) {
             displayTree(child, node, highlight)
         }
     } else {
-        let node = document.createTextNode(tree)
+        let node = document.createElement("span")
+        let text = document.createTextNode(tree)
+        
+        node.appendChild(text)
         div.appendChild(node)
     }
+}
+
+function drawArrows(tree, arrows) {
+    if (typeof tree == "object") {
+        for (let child of tree.children) {
+            drawArrows(child, arrows)
+        }
+        
+        if (tree.type == "content_phrase" || tree.type == "content_phrase_marked_pred") {
+            drawModifierArrows(arrows, tree, null)
+        }
+    }
+}
+
+function drawModifierArrows(arrows, tree, dest) {
+    let head = tree.children.find((e) => e.type == "content_word_head")
+    let modifiers = tree.children.find((e) => e.type == "content_phrase_modifiers")
+    let subphrase = tree.children.find((e) => e.type == "grouped_content_phrase")
+    
+    if (!head) {
+        return
+    }
+    
+    
+    if (subphrase) {
+        drawModifierArrows(arrows, subphrase, head)
+    }
+    
+    if (modifiers) {
+        for (let i = 0; i < modifiers.children.length; i++) {
+            drawArrow(arrows, modifiers.children[i].div, head.div)
+        }
+    }
+    
+    if (dest) {
+        drawArrow(arrows, head.div, dest.div)
+    }
+}
+
+function drawArrow(arrows, src, dest) {
+    let arrowsRect = arrows.getBoundingClientRect()
+    let srcRect = src.getBoundingClientRect()
+    let destRect = dest.getBoundingClientRect()
+    
+    let x1 = (srcRect.left + srcRect.right) / 2 - arrowsRect.left
+    let y1 = srcRect.bottom - arrowsRect.top
+    let x2 = (destRect.left + destRect.right) / 2 - arrowsRect.left
+    let y2 = destRect.bottom - arrowsRect.top
+    
+    let bx1 = x1 - 25
+    let by1 = y1 + (x1 - x2) / 10
+    let bx2 = x2 + 25
+    let by2 = y2 + (x1 - x2) / 10
+    
+    /*
+    let arrow = document.createElement("path")
+    arrow.classList.add("arrow")
+    arrow.setAttribute("d", `M${x1},${y1} C${bx1},${by1} ${bx2},${by2} ${x2},${y2}`)
+    arrows.appendChild(arrow)
+    */
+    
+    arrows.innerHTML += `<path class="arrow" d="M${x1},${y1} C${bx1},${by1} ${bx2},${by2} ${x2},${y2}" />`
 }
 
 let grammar = null
@@ -427,6 +496,15 @@ async function loadGrammar(file) {
     if (grammar == null) {
         displayError(`Unable to load grammar file`)
     }
+    
+    let sentenceDiv = document.getElementById("sentence")
+    
+    let sentence = new URLSearchParams(location.search).get("sentence")
+    
+    if (sentence) {
+        sentenceDiv.value = sentence
+        updateParse()
+    }
 }
 
 function updateParse() {
@@ -436,6 +514,8 @@ function updateParse() {
     }
     
     let sentence = document.getElementById("sentence").value
+    let prune = true
+    
     let tokens = sentence.match(/[A-Za-z]+/g) ?? []
     
     if (tokens.length == 0) {
@@ -444,11 +524,11 @@ function updateParse() {
     }
     
     let errorsStart = tokens.length
-    res = match(grammar, "sentence", tokens, errorsStart)
+    res = match(grammar, "sentence", tokens, errorsStart, prune)
     
     if (!res.success) {
         while (res.errors.length == 0 && errorsStart >= 0) {
-            res = match(grammar, "sentence", tokens, --errorsStart)
+            res = match(grammar, "sentence", tokens, --errorsStart, prune)
         }
         
         res.errors = res.errors.map((e, i) => ({
@@ -473,11 +553,13 @@ function clearDisplay() {
     let errorDiv = document.getElementById("error")
     let displayDiv = document.getElementById("display")
     let selectorsDiv = document.getElementById("selectors")
+    let arrows = document.getElementById("arrows")
     
     headerDiv.replaceChildren()
     errorDiv.replaceChildren()
     displayDiv.replaceChildren()
     selectorsDiv.classList.add("hide")
+    arrows.replaceChildren()
 }
 
 function updateDisplay() {
@@ -485,6 +567,8 @@ function updateDisplay() {
     let errorDiv = document.getElementById("error")
     let displayDiv = document.getElementById("display")
     let selectorsDiv = document.getElementById("selectors")
+    let arrowBox = document.getElementById("arrowbox")
+    let arrows = document.getElementById("arrows")
     
     clearDisplay()
     
@@ -493,15 +577,20 @@ function updateDisplay() {
         return
     }
     
+    let tree
+    
     if (res.success) {
-        let tree = res.results[chosenResult]
+        tree = res.results[chosenResult]
         numResults = res.results.length
         
         headerDiv.innerText = `Found ${res.results.length} interpretation${res.results.length == 1 ? "" : "s"}.`
         
         displayTree(tree, displayDiv)
     } else {
-        let { error, tree } = res.errors[chosenResult]
+        let error = res.errors[chosenResult]
+        tree = error.tree
+        error = error.error
+        
         numResults = res.errors.length
         
         headerDiv.innerText = `Failed to parse sentence. ${res.errors.length} possible fix${res.errors.length == 1 ? "" : "es"} found.`
@@ -512,6 +601,16 @@ function updateDisplay() {
     
     updateSelectors()
     selectorsDiv.classList.remove("hide")
+    
+    let rect = displayDiv.getBoundingClientRect()
+    arrows.style.top = rect.top
+    arrows.style.left = rect.left
+    arrows.style.width = rect.width
+    arrows.style.height = rect.height * 2 // what am i even doing
+    
+    if (arrowBox.checked) {
+        drawArrows(tree, arrows)
+    }
 }
 
 function updateSelectors() {

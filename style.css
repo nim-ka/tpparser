@@ -44,3 +44,26 @@ body {
 .highlight {
     background-color: pink;
 }
+
+.svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.svghide {
+    width: 0;
+    height: 0;
+}
+
+.arrowhead {
+    fill: black;
+}
+
+.arrow {
+    fill: none;
+    stroke: black;
+    stroke-width: 2px;
+    
+    marker-end: url(#arrowhead);
+}

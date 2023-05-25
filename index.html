@@ -12,13 +12,23 @@
     </head>
     
     <body>
-	Disclaimer: This tool does not parse X ala X questions.
-	<br />
-	Besides that, it reflects alesa's personal grammar nasin and is not guaranteed to align with others'.
-	<br />
-	<br />
+        <svg class="svg svghide">
+            <defs>
+                <marker id="arrowhead" markerWidth="5" markerHeight="4" refX="3" refY="2" orient="auto">
+                    <path class="arrowhead" d="M0,0 L0,4 L5,2 L0,0" />
+                </marker>
+            </defs>
+        </svg>
+        Disclaimer: This tool does not parse X ala X questions.
+        <br />
+        Besides that, it reflects alesa's personal grammar nasin and is not guaranteed to align with others'.
+        <br />
+        <br />
+        <input type="checkbox" id="arrowbox" onchange="updateDisplay()" />
+        <label for="arrowbox">Show modifier arrows (glitchy cus i'm bad at webdev)</label>
+        <br />
         <label for="sentence">Sentence:</label>
-	<input type="text" id="sentence" size="40" maxlength="256" onkeyup="updateParse()" />
+        <input type="text" id="sentence" size="40" maxlength="256" onkeyup="updateParse()" />
         <br />
         <br />
         <div id="header"></div>
@@ -30,5 +40,6 @@
         </div>
         <br />
         <div id="display"></div>
+        <svg id="arrows" class="svg"></svg>
     </body>
 </html>
