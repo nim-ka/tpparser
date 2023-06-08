@@ -24,11 +24,17 @@
         Besides that, it reflects alesa's personal grammar nasin and is not guaranteed to align with others'.
         <br />
         <br />
-        <input type="checkbox" id="arrowbox" onchange="updateDisplay()" />
+        <input type="checkbox" id="arrowbox" onchange="updateDisplay()" checked />
         <label for="arrowbox">Show modifier arrows (glitchy cus i'm bad at webdev)</label>
         <br />
         <label for="sentence">Sentence:</label>
         <input type="text" id="sentence" size="40" maxlength="256" onkeyup="updateParse()" />
+        <br />
+        <label for="nasin">nasin:</label>
+        <select id="nasin">
+            <option value="nasin_alesa.txt" selected="selected">nasin alesa</option>
+            <option value="nasin_alesa_lili.txt">nasin alesa pi nimi lili</option>
+        </select>
         <br />
         <br />
         <div id="header"></div>

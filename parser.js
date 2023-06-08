@@ -497,24 +497,19 @@ let res = null
 let chosenResult = 0
 let numResults = 0
 
-async function loadGrammar(file) {
+async function loadGrammar() {
+    let nasinSelector = document.getElementById("nasin")
+
     clearDisplay()
     
-    let res = await fetch(file)
+    let res = await fetch(nasinSelector.value)
     grammar = parse(await res.text())
     
     if (grammar == null) {
         displayError(`Unable to load grammar file`)
     }
     
-    let sentenceDiv = document.getElementById("sentence")
-    
-    let sentence = new URLSearchParams(location.search).get("sentence")
-    
-    if (sentence) {
-        sentenceDiv.value = sentence
-        updateParse()
-    }
+    updateParse()
 }
 
 function updateParse() {
@@ -636,4 +631,19 @@ function selectRight() {
     updateDisplay()
 }
 
-window.addEventListener("load", () => loadGrammar("nasin_alesa.txt"))
+window.addEventListener("load", () => {
+    let nasinSelector = document.getElementById("nasin")
+    let sentenceDiv = document.getElementById("sentence")
+    
+    let sentence = new URLSearchParams(location.search).get("sentence")
+    
+    if (sentence) {
+        sentenceDiv.value = sentence
+    }
+    
+    loadGrammar()
+    
+    nasinSelector.addEventListener("change", () => {
+        loadGrammar()
+    })
+})
