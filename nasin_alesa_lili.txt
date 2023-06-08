@@ -88,9 +88,7 @@ content_phrase_modifiers =
   <content_word_modifiers>;
 
 content_word_modifiers* =
-  <content_word_modifier> |
-  <content_word_modifier> <content_word_modifier> |
-  <content_word_modifier> <content_word_modifier> <content_word_modifier>;
+  <content_word_modifier> [content_word_modifier];
 
 # maybe ordinals shouldn't be restricted to number words?
 ordinal_phrase =
