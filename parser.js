@@ -497,12 +497,17 @@ let res = null
 let chosenResult = 0
 let numResults = 0
 
+let lsKeyNasin = "tpparser.preferred_nasin"
+
 async function loadGrammar() {
     let nasinSelector = document.getElementById("nasin")
 
     clearDisplay()
     
-    let res = await fetch(nasinSelector.value)
+    let file = nasinSelector.value
+    localStorage.setItem(lsKeyNasin, file)
+    
+    let res = await fetch(file)
     grammar = parse(await res.text())
     
     if (grammar == null) {
@@ -639,6 +644,14 @@ window.addEventListener("load", () => {
     
     if (sentence) {
         sentenceDiv.value = sentence
+    }
+    
+    let preferredNasin = localStorage.getItem(lsKeyNasin)
+    
+    if (preferredNasin) {
+        nasinSelector.value = preferredNasin
+    } else {
+        nasinSelector.selectedIndex = 0
     }
     
     loadGrammar()
